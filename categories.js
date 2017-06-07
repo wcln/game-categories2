@@ -45,7 +45,17 @@ function init() {
 
 function update(event) {
 	if (gameStarted) {
-
+		for (var cat of categories) {
+			if (ndgmr.checkRectCollision(cat, questions[questionCounter]) != null) {
+				cat.scaleX = (CATEGORY_IMAGE_WIDTH / cat.image.width) * 1.2;
+				cat.scaleY = (CATEGORY_IMAGE_HEIGHT / cat.image.height) * 1.2;
+				cat.alpha = 0.8;
+			} else {
+				cat.scaleX = CATEGORY_IMAGE_WIDTH / cat.image.width;
+				cat.scaleY = CATEGORY_IMAGE_HEIGHT / cat.image.height;
+				cat.alpha = 1.0;
+			}
+		}
 	}
 
 	stage.update(event);
@@ -57,20 +67,44 @@ function update(event) {
 function endGame() {
 	gameStarted = false;
 
-	alert("Game over! Score: " + score + "/" + questions.length);
+	var scoreText = new createjs.Text("Score: " + score + "/" + questions.length, "40px Sans", "black");
+	scoreText.x = STAGE_WIDTH/2 - scoreText.getMeasuredWidth()/2;
+	scoreText.y = STAGE_HEIGHT/2 - 20;
+
+	createjs.Tween.get(scoreText).wait(1000).call(function() {
+		stage.addChild(endScreen);
+		stage.addChild(scoreText);
+		stage.on("stagemousedown", function() {
+			location.reload();
+		})
+	});
 }
 
 function initGraphics() {
+
+	// animation stuff
+	checkMark.regX = checkMark.image.width/2;
+	checkMark.regY = checkMark.image.height/2;
+	xMark.regX = xMark.image.width/2;
+	xMark.regY = xMark.image.height/2;
+	checkMark.x = STAGE_WIDTH/2;
+	checkMark.y = STAGE_HEIGHT/2;
+	xMark.x = STAGE_WIDTH/2;
+	xMark.y = STAGE_HEIGHT/2;
 
 	// render the 2 categories to the screen
 	categories[0].scaleX = CATEGORY_IMAGE_WIDTH / categories[0].image.width;
 	categories[1].scaleX = CATEGORY_IMAGE_WIDTH / categories[1].image.width;
 	categories[0].scaleY = CATEGORY_IMAGE_HEIGHT / categories[0].image.height;
 	categories[1].scaleY = CATEGORY_IMAGE_HEIGHT / categories[1].image.height;
-	categories[0].x = STAGE_WIDTH/2 - ((categories[0].image.width) * categories[0].scaleX) - 80;
-	categories[1].x = STAGE_WIDTH/2 + 80;
-	categories[0].y = STAGE_HEIGHT - categories[0].image.height * categories[0].scaleY - 20;
-	categories[1].y = STAGE_HEIGHT - categories[1].image.height * categories[1].scaleY - 20;
+	categories[0].regX = categories[0].getBounds().width/2;
+	categories[1].regX = categories[1].getBounds().width/2;
+	categories[0].regY = categories[0].getBounds().height/2;
+	categories[1].regY = categories[1].getBounds().height/2;
+	categories[0].x = STAGE_WIDTH/2 - categories[0].getBounds().width * categories[0].scaleX - 70;
+	categories[1].x = STAGE_WIDTH/2 + categories[1].getBounds().width * categories[1].scaleX + 70;
+	categories[0].y = STAGE_HEIGHT - categories[0].image.height * categories[0].scaleY + 20;
+	categories[1].y = STAGE_HEIGHT - categories[1].image.height * categories[1].scaleY + 20;
 	stage.addChild(categories[0]); 
 	stage.addChild(categories[1]);
 
@@ -107,7 +141,13 @@ function renderQuestion(index) {
 		this.scaleY = IMAGE_HEIGHT / this.image.height;
 	});
 
-	stage.addChild(questions[index]); 
+	if (questionCounter === 0) {
+		stage.addChild(questions[index]);
+	} else {
+		createjs.Tween.get(questions[index]).wait(1200).call(function() {
+			stage.addChild(questions[index]);
+		}); 
+	}
 }
 
 function imageClickHandler(event) {
@@ -128,11 +168,12 @@ function imageDropHandler(event) {
 	}
 
 	if (guess !== -1) {
+		playSound("click");
 		if (parseInt(answers.charAt(questionCounter)) === guess) {
-			alert('Correct!');
+			correctAnimation();
 			score++;
 		} else {
-			alert('Wrong :(');
+			wrongAnimation();
 		}
 
 		// move to next question
@@ -148,6 +189,18 @@ function imageDropHandler(event) {
 	}
 }
 
+function wrongAnimation() {
+	xMark.alpha = 0;
+	stage.addChild(xMark);
+	createjs.Tween.get(xMark).to({alpha:1}, 200).to({alpha:0}, 1000).call(function(){stage.removeChild(xMark)});
+}
+
+function correctAnimation() {
+	checkMark.alpha = 0;
+	stage.addChild(checkMark);
+	createjs.Tween.get(checkMark).to({alpha:1}, 200).to({alpha:0}, 1000).call(function(){stage.removeChild(checkMark)});
+}
+
 
 
 ////////////////////////////////////////////////// PRE LOAD JS FUNCTIONS
@@ -155,6 +208,8 @@ function imageDropHandler(event) {
 // bitmap variables
 var questions = [];
 var categories = [];
+var background, endscreen;
+var checkMark, xMark;
 
 var PATH_TO_SUB_FOLDER = "images/question_images/" + SUB_FOLDER + "/";
 
@@ -191,6 +246,22 @@ function setupManifest() {
 		{
 			src: PATH_TO_SUB_FOLDER + "question5.jpg",
 			id: "question5"
+		},
+		{
+			src: "images/checkmark.png",
+			id: "checkmark"
+		},
+		{
+			src: "images/xmark.png",
+			id: "xmark"
+		},
+		{
+			src: "images/background.png",
+			id: "background"
+		},
+		{
+			src: "images/endscreen.png",
+			id: "endscreen"
 		}
 	];
 }
@@ -212,6 +283,14 @@ function handleFileLoad(event) {
    		categories.push(new createjs.Bitmap(event.result));
    	} else if (event.item.id.includes("question")) {
    		questions.push(new createjs.Bitmap(event.result));
+   	} else if (event.item.id == "checkmark") {
+   		checkMark = new createjs.Bitmap(event.result);
+   	} else if (event.item.id == "xmark") {
+   		xMark = new createjs.Bitmap(event.result);
+   	} else if (event.item.id == "background") {
+   		background = new createjs.Bitmap(event.result);
+   	} else if (event.item.id == "endscreen") {
+   		endScreen = new createjs.Bitmap(event.result);
    	}
 }
 
@@ -236,6 +315,8 @@ function loadComplete(event) {
 	createjs.Ticker.setFPS(FPS);
 	createjs.Ticker.addEventListener("tick", update); // call update function
 
+
+	stage.addChild(background);
     stage.update();
     initGraphics();
 }
