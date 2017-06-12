@@ -49,11 +49,14 @@ function update(event) {
 			if (ndgmr.checkRectCollision(cat, questions[questionCounter]) != null) {
 				cat.scaleX = (CATEGORY_IMAGE_WIDTH / cat.image.width) * 1.2;
 				cat.scaleY = (CATEGORY_IMAGE_HEIGHT / cat.image.height) * 1.2;
-				cat.alpha = 0.8;
+				cat.alpha = 0.5;
+				questions[questionCounter].alpha = 0.5;
+				break;
 			} else {
 				cat.scaleX = CATEGORY_IMAGE_WIDTH / cat.image.width;
 				cat.scaleY = CATEGORY_IMAGE_HEIGHT / cat.image.height;
 				cat.alpha = 1.0;
+				questions[questionCounter].alpha = 1.0;
 			}
 		}
 	}
